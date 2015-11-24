@@ -20,11 +20,12 @@ INPUT_IMAGE = 'samples/images/faces.jpg'
 DETECTED_OUTPUT_PATH = 'samples/detected/'
 
 caffe.set_mode_cpu()
-net = caffe.Net(PROTOTXT, CAFFE_MODEL , caffe.TEST)
+net = caffe.Net(PROTOTXT, CAFFE_MODEL, caffe.TEST)
 
 im_array = np.array(Image.open(INPUT_IMAGE).convert('RGB'))
 im_array = rgb2gray(im_array)
 
+# TODO check if bounds are correct (getting execution error at the end...)
 for x in range(0, im_array.size - WINDOW_SIZE):
     for y in range(0, im_array[0].size - WINDOW_SIZE):
         window_array = window(x, y, im_array)
