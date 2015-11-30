@@ -14,10 +14,12 @@ def rgb2gray(rgb):
 def window(x, y, im):
     return im[y:y + WINDOW_SIZE, x:x + WINDOW_SIZE]
 
+
 def merge_windows(w1, w2):
     w1x1, w1y1, w1x2, w1y2 = w1
     w2x1, w2y1, w2x2, w2y2 = w2
     return min(w1x1, w2x1), min(w1y1, w2y1), max(w1x2, w2x2), max(w1y2, w2y2)
+
 
 def windows_distance(w1,w2):
     [w1x1, w1y1, w1x2, w1y2] = w1
@@ -27,29 +29,37 @@ def windows_distance(w1,w2):
     return np.linalg.norm(w1center-w2center)
 
 
-def merge_windows_list(wList, max_distance):
+def merge_windows_list(window_list, max_distance):
     merged = False
     merged_list = []
+    already_merged_list = []
 
-    for i, w1 in enumerate(detected):
-        for j, w2 in enumerate(detected[i+1:]):
-            if windows_distance(w1, w2) < max_distance:
+    for i, w1 in enumerate(window_list):
+        for j, w2 in enumerate(window_list[i+1:]):
+            if w1 not in already_merged_list and w2 not in already_merged_list and windows_distance(w1, w2) < max_distance :
                 merged_list.append(merge_windows(w1, w2))
-                print 'merged windows', w1, w2
-                del detected[i]
-                del detected[j]
+                already_merged_list.append(w1)
+                already_merged_list.append(w2)
                 merged = True
-                break
+                print 'merged windows', w1, w2
 
     if merged:
-        return merge_windows_list(merged_list + wList, max_distance)
+        not_merged_list = [item for item in window_list if item not in already_merged_list]
+        return merge_windows_list(merged_list + not_merged_list, max_distance)
     else:
-        return wList
+        return window_list
 
+
+def show_detected(detected_windows, image, color):
+    for w in detected_windows:
+        draw = ImageDraw.Draw(image)
+        draw.rectangle(w, fill=None, outline=color)
+    image.show()
 
 # parameters
 WINDOW_SIZE = 36
 DETECTION_THRESHOLD = 0.8
+MAX_DISTANCE = 10
 PROTOTXT = 'NET.prototxt'
 CAFFE_MODEL = 'facenet_iter_200000.caffemodel'
 INPUT_IMAGE = 'samples/images/faces.jpg'
@@ -82,15 +92,7 @@ for rzoom in ZOOM_RANGE:
                 detected.append((real_x, real_y, real_x + int(WINDOW_SIZE * 1 / rzoom), real_y + int(WINDOW_SIZE * 1 / rzoom)))
                 #Image.fromarray(window_array).convert('RGB').save(DETECTED_OUTPUT_PATH + 'face_%d_%d.pgm' % (real_x, real_y))
 
-MAX_DISTANCE = 10
-for w in detected:
-    print w
-    draw = ImageDraw.Draw(image)
-    draw.rectangle(w, fill=None, outline="red")
-
-# for w in merge_windows_list(detected, MAX_DISTANCE):
-#     print w
-#     draw = ImageDraw.Draw(image2)
-#     draw.rectangle(w, fill=None, outline="red")
-
-image.show()
+#show detection before merging windows
+show_detected(detected, image, "red")
+#show detection after merging windows
+show_detected(merge_windows_list(detected, MAX_DISTANCE), image2, "blue")
